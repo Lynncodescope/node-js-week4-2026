@@ -21,6 +21,23 @@ const jwt = require('jsonwebtoken');
  */
 const verifyToken = function (req, res, next) {
   /* 作答區 */
+  const auth = req.headers.authorization;
+  
+  // 第一關：檢查有沒有auth、auth格式是否正確
+  if (!auth || !auth.startsWith('Bearer ')){
+    return res.status(401).json({status: 'false', message: '請先登入'});
+  }
+
+  // 能走到這裡，代表第一關的檢驗已經通過，不需要再多包一層else{}
+  const token = auth.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;   
+    next();
+    // 以上：JWT驗證成功 >>（一開始傳入的req) req.user = decoded >> next();
+  } catch (error) {
+    return res.status(401).json({ status: 'false', message: 'Token 無效或已過期' });
+  }
 };
 
 module.exports = verifyToken;
