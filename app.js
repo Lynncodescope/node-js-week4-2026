@@ -1,11 +1,15 @@
+// 引入套件
 const express = require('express');
-const cors = require('cors');
+const cors = require('cors');  // 處理前端是否可向後端API發request
 const swaggerUi = require('swagger-ui-express');
 
+// 引入自己寫的程式碼
 const authRouter = require('./routes/auth');
 const swaggerDoc = require('./fixtures/swagger.json');
 
-const app = express();
+// 呼叫啟用建立真正的Express application;
+// 後面的app.use(...)都是在設定這個 app 的功能。
+const app = express();  
 
 // ───────────────────────────────────────────────────────────
 // TODO 任務五：將 middleware、router、守門員依序掛上 app
@@ -22,6 +26,28 @@ const app = express();
 //
 // ⚠️ **最後不需呼叫 app.listen()** — 這個部分交由 server.js 負責（分離「組裝」跟「啟動」，這樣 test.js 可以 supertest 直接戳 app、不佔 port）。
 
+
+// 沒有指定哪個路由('/XXX')，代表所有request都會經過它。
+app.use(cors());  
+// 負責解析 Content-Type: application/json的 request帶進來的 body。
+app.use(express.json());   
+
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+
+// '/register'、'/login'、'/me' 都要等auth.js掛載到 app 上後才能真正使用。
+app.use('/auth', authRouter);
+
+// 沒有指定哪個路由('/XXX')，代表所有不符合上述路由的request都會被這裡接收。
+app.use((req,res) => {
+    return res.status(404).json({message: "無此路由資訊"});
+});
+
+// 四個參數的形式是專門處理error
+app.use((err,req,res,next) => {
+    return res.status(500).json({
+        err:err.name,
+        message:err.message
+    });
+});
 
 module.exports = app;
